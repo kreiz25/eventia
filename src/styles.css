@@ -27,3 +27,24 @@
 .map-search-block a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:9px;background:#f4f1ec;color:#347f7b;text-decoration:none;font-size:9px;font-weight:700}
 .map-search-block>small{display:block;margin-top:8px;color:#99939c;font-size:8px;line-height:1.4}
 @media(max-width:360px){.event-editor .form-two{grid-template-columns:minmax(0,1fr)}}
+
+/* Keep the editor inside the iPhone's visual viewport and prevent iOS input zoom. */
+.event-editor-overlay{padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.event-editor{width:100%;max-width:560px;min-width:0;flex:0 1 560px;margin:0}
+.event-editor .add-head,.event-editor .add-head>div,.event-editor form,.event-editor form>label,.event-editor .form-two>label{min-width:0;max-width:100%}
+.event-editor .add-head h2{font-size:clamp(19px,6vw,24px);overflow-wrap:anywhere}
+.event-editor .form-two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.event-editor input,.event-editor select,.event-editor textarea{box-sizing:border-box;min-width:0;font-size:16px}
+.event-editor input[type=file]{font-size:14px}
+.event-editor .date-pair,.event-editor .time-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.event-editor .map-search-block{width:100%;max-width:100%;min-width:0}
+.event-editor .map-search-block>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.event-editor .map-search-block a{min-width:0;justify-content:center;gap:4px;padding:8px 5px;font-size:clamp(8px,2.5vw,10px);white-space:nowrap}
+.event-editor .map-search-block>small{overflow-wrap:anywhere}
+@media(max-width:360px){.event-editor .form-two:not(.date-pair):not(.time-pair){grid-template-columns:minmax(0,1fr)}}
+.detail-start{display:flex;align-items:center;gap:12px;margin:13px 0 15px;padding:12px;border:1px solid #f0e9e1;border-left:4px solid #ff5b45;border-radius:13px;background:#fff}
+.detail-start>.detail-icon{width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:#fff0ed;color:#ff5b45}
+.detail-start>div{display:grid;gap:3px;min-width:0}
+.detail-start b{font:700 clamp(16px,4.8vw,20px)/1.2 'DM Sans',sans-serif;color:#24232b;overflow-wrap:anywhere}
+.detail-start strong{font:700 clamp(18px,5.3vw,22px)/1.2 'DM Sans',sans-serif;color:#ff5b45}
+.detail-start>div>span{font-size:9px;color:#99939c}
