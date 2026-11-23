@@ -12,3 +12,18 @@
 .archive-filter{display:flex;gap:8px;margin:16px 0 8px}.archive-filter>input{min-width:0;flex:1;border:1px solid #ebe6df;border-radius:10px;padding:10px 12px;background:#fff;font-size:10px}.archive-filter>select{border:1px solid #ebe6df;border-radius:10px;padding:9px 10px;background:#fff;color:#68636c;font-size:10px}
 .pdf-share-block{margin-top:9px}.pdf-notes-choice{display:flex;align-items:center;gap:6px;margin:0 0 8px 2px;color:#77717b;font-size:9px}.pdf-notes-choice input{accent-color:#ff5b45}.pdf-share-block>p{font-size:8px;text-align:center;color:#9a959d;margin:7px 0 0}
 .csv-export{width:100%;margin-top:8px}
+
+/* Keep the event editor inside the iPhone viewport, including native date inputs. */
+.event-editor{width:min(560px,calc(100vw - 16px));max-width:calc(100vw - 16px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 8px);margin:0 8px;padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+.event-editor form{width:100%;min-width:0}
+.event-editor form>label,.event-editor .form-two>label{min-width:0}
+.event-editor input,.event-editor select,.event-editor textarea{width:100%;max-width:100%;min-width:0}
+.event-editor input[type=file]{display:block}
+.event-editor .form-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.field-hint{font-size:8px;line-height:1.35;color:#9a959d;font-weight:400}
+.map-search-block{margin:-3px 0 13px;padding:11px 12px;border:1px solid #e8e2da;border-radius:12px;background:#fff;min-width:0}
+.map-search-block>span{display:block;margin-bottom:8px;color:#77727b;font-size:9px;font-weight:700}
+.map-search-block>div{display:flex;gap:8px;flex-wrap:wrap}
+.map-search-block a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:9px;background:#f4f1ec;color:#347f7b;text-decoration:none;font-size:9px;font-weight:700}
+.map-search-block>small{display:block;margin-top:8px;color:#99939c;font-size:8px;line-height:1.4}
+@media(max-width:360px){.event-editor .form-two{grid-template-columns:minmax(0,1fr)}}

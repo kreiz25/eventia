@@ -18,7 +18,10 @@ const artFor = (catId: string) => ({ 'cat-concertos':'atlantic', 'cat-exposicion
 
 type EventItem = EventRecord & { category: CategoryRecord }
 type Draft = Omit<EventRecord, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'cover' | 'thumbnail'> & { id?: string; status?: EventStatus; createdAt?: string; cover?: Blob; coverName?: string; coverType?: string }
-const emptyDraft = (categoryId: string): Draft => ({ title:'', categoryId, description:'', startDate:localDateString(), startTime:'', endDate:'', endTime:'', venue:'', address:'', city:'', companions:'', notes:'', price:'', link:'', observations:'' })
+const emptyDraft = (categoryId: string): Draft => {
+  const today = localDateString()
+  return { title:'', categoryId, description:'', startDate:today, startTime:'', endDate:today, endTime:'', venue:'', address:'', city:'', companions:'', notes:'', price:'', link:'', observations:'' }
+}
 
 function Poster({ item, large = false }: { item: EventItem; large?: boolean }) {
   const [coverUrl, setCoverUrl] = useState('')
@@ -129,7 +132,7 @@ function App() {
     const event: EventRecord = {
       id:draft.id || crypto.randomUUID(), title:draft.title, categoryId:draft.categoryId,
       description:draft.description, startDate:draft.startDate, startTime:draft.startTime,
-      endDate:draft.endDate, endTime:draft.endTime, venue:draft.venue, address:draft.address,
+      endDate:draft.endDate || undefined, endTime:draft.endTime, venue:draft.venue, address:draft.address,
       city:draft.city, latitude:draft.latitude, longitude:draft.longitude, companions:draft.companions,
       notes:draft.notes, price:draft.price, link:draft.link, observations:draft.observations,
       status:draft.status || 'upcoming',
@@ -272,10 +275,13 @@ function App() {
 function DetailText({icon,title,body}:{icon:string;title:string;body:string}) { return <div className="detail-row"><span className="detail-icon detail-symbol">{icon}</span><div><b>{title}</b><span>{body}</span></div></div> }
 
 function MapActions({event}:{event:EventItem}) {
-  const query = event.latitude !== undefined && event.longitude !== undefined ? `${event.latitude},${event.longitude}` : [event.venue,event.address,event.city].filter(Boolean).join(', ')
+  const query = [event.venue,event.address,event.city].filter(Boolean).join(', ') || (event.latitude !== undefined && event.longitude !== undefined ? `${event.latitude},${event.longitude}` : '')
   if (!query) return null
-  return <div className="map-actions"><a href={`https://maps.apple.com/?q=${encodeURIComponent(query)}`} target="_blank" rel="noreferrer"><MapPin size={14}/> Apple Maps <ExternalLink size={12}/></a><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`} target="_blank" rel="noreferrer"><MapPin size={14}/> Google Maps <ExternalLink size={12}/></a></div>
+  return <div className="map-actions"><a href={appleMapsURL(query)} target="_blank" rel="noreferrer"><MapPin size={14}/> Apple Maps <ExternalLink size={12}/></a><a href={googleMapsURL(query)} target="_blank" rel="noreferrer"><MapPin size={14}/> Google Maps <ExternalLink size={12}/></a></div>
 }
+
+function appleMapsURL(query:string) { return `https://maps.apple.com/?q=${encodeURIComponent(query)}` }
+function googleMapsURL(query:string) { return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` }
 
 const reminderOptions: {kind:ReminderRecord['kind'];label:string}[] = [
   {kind:'7-days',label:'7 días antes'}, {kind:'1-day',label:'1 día antes'}, {kind:'2-hours',label:'2 horas antes'},
@@ -354,7 +360,8 @@ function PDFShare({event,notify}:{event:EventItem;notify:(message:string)=>void}
 }
 
 function EventEditor({categories,initial,onClose,onSave}:{categories:CategoryRecord[];initial:EventItem|null;onClose:()=>void;onSave:(draft:Draft)=>Promise<void>}) {
-  const [draft,setDraft]=useState<Draft>(()=>initial?({id:initial.id,title:initial.title,categoryId:initial.categoryId,description:initial.description,startDate:initial.startDate,startTime:initial.startTime,endDate:initial.endDate,endTime:initial.endTime,venue:initial.venue,address:initial.address,city:initial.city,latitude:initial.latitude,longitude:initial.longitude,companions:initial.companions,notes:initial.notes,price:initial.price,link:initial.link,observations:initial.observations,status:initial.status,createdAt:initial.createdAt,cover:initial.cover,coverName:initial.coverName,coverType:initial.coverType}):emptyDraft(categories[0]?.id||'cat-outros'))
+  const [draft,setDraft]=useState<Draft>(()=>initial?({id:initial.id,title:initial.title,categoryId:initial.categoryId,description:initial.description,startDate:initial.startDate,startTime:initial.startTime,endDate:initial.endDate||initial.startDate,endTime:initial.endTime,venue:initial.venue,address:initial.address,city:initial.city,latitude:initial.latitude,longitude:initial.longitude,companions:initial.companions,notes:initial.notes,price:initial.price,link:initial.link,observations:initial.observations,status:initial.status,createdAt:initial.createdAt,cover:initial.cover,coverName:initial.coverName,coverType:initial.coverType}):emptyDraft(categories[0]?.id||'cat-outros'))
+  const [customEndDate,setCustomEndDate]=useState(()=>Boolean(initial?.endDate&&initial.endDate!==initial.startDate))
   const [coverFile,setCoverFile]=useState<File|null>(null)
   const [coverPreview,setCoverPreview]=useState('')
   const [storedCoverPreview,setStoredCoverPreview]=useState('')
@@ -362,6 +369,9 @@ function EventEditor({categories,initial,onClose,onSave}:{categories:CategoryRec
   useEffect(()=>{if(!coverFile){setCoverPreview('');return}const url=URL.createObjectURL(coverFile);setCoverPreview(url);return()=>URL.revokeObjectURL(url)},[coverFile])
   useEffect(()=>{if(!draft.cover){setStoredCoverPreview('');return}const url=URL.createObjectURL(draft.cover);setStoredCoverPreview(url);return()=>URL.revokeObjectURL(url)},[draft.cover])
   const set=<K extends keyof Draft>(key:K,value:Draft[K])=>setDraft(prev=>({...prev,[key]:value}))
+  const changeStartDate=(value:string)=>setDraft(prev=>({...prev,startDate:value,endDate:customEndDate?prev.endDate:value}))
+  const changeEndDate=(value:string)=>{setCustomEndDate(Boolean(value&&value!==draft.startDate));set('endDate',value)}
+  const locationQuery=[draft.venue,draft.address,draft.city].filter(Boolean).join(', ')
   async function submit(e:FormEvent) {
     e.preventDefault()
     if(!draft.title.trim()) return setError('O título é obrigatorio.')
@@ -370,7 +380,13 @@ function EventEditor({categories,initial,onClose,onSave}:{categories:CategoryRec
     setError('')
     await onSave({...draft,title:draft.title.trim(),cover:coverFile||draft.cover,coverName:coverFile?.name||draft.coverName,coverType:coverFile?.type||draft.coverType})
   }
-  return <div className="overlay" onClick={onClose}><section className="add-sheet event-editor" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><div className="add-head"><div><span className="section-label">{initial?'EDITAR EVENTO':'UN PLAN NOVO'}</span><h2>{initial?'Axusta os detalles':'Que tes na axenda?'}</h2></div><button className="close-button" onClick={onClose} aria-label="Pechar"><X size={19}/></button></div><form onSubmit={e=>void submit(e)}><label>Título *<input autoFocus value={draft.title} onChange={e=>set('title',e.target.value)} placeholder="p.ex. Concerto de verán" required/></label><div className="form-two"><label>Categoría<select value={draft.categoryId} onChange={e=>set('categoryId',e.target.value)}>{categories.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><label>Data de inicio *<input value={draft.startDate} onChange={e=>set('startDate',e.target.value)} type="date" required/></label></div><div className="form-two"><label>Hora de inicio<input value={draft.startTime} onChange={e=>set('startTime',e.target.value)} type="time"/></label><label>Data de fin (opcional)<input value={draft.endDate||''} onChange={e=>set('endDate',e.target.value)} type="date"/></label></div><div className="form-two"><label>Hora de fin<input value={draft.endTime} onChange={e=>set('endTime',e.target.value)} type="time"/></label><label>Prezo<input value={draft.price} onChange={e=>set('price',e.target.value)} placeholder="p.ex. 25 €"/></label></div><label>Recinto ou lugar<input value={draft.venue} onChange={e=>set('venue',e.target.value)} placeholder="Nome do local"/></label><label>Enderezo<input value={draft.address} onChange={e=>set('address',e.target.value)} placeholder="Rúa, número…"/></label><label>Localidade<input value={draft.city} onChange={e=>set('city',e.target.value)} placeholder="Cidade"/></label><div className="form-two"><label>Latitude<input value={draft.latitude??''} onChange={e=>set('latitude',e.target.value?Number(e.target.value):undefined)} type="number" step="any" placeholder="42.2406"/></label><label>Lonxitude<input value={draft.longitude??''} onChange={e=>set('longitude',e.target.value?Number(e.target.value):undefined)} type="number" step="any" placeholder="-8.7207"/></label></div><label>Descrición<textarea value={draft.description} onChange={e=>set('description',e.target.value)} rows={3} placeholder="Que che gustaría lembrar deste plan?"/></label><div className="form-two"><label>Acompañantes<input value={draft.companions} onChange={e=>set('companions',e.target.value)} placeholder="Con quen vas?"/></label><label>Ligazón externa<input value={draft.link} onChange={e=>set('link',e.target.value)} type="url" placeholder="https://…"/></label></div><label>Notas persoais<textarea value={draft.notes} onChange={e=>set('notes',e.target.value)} rows={2}/></label><label>Portada<input type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)}/></label>{(coverPreview||storedCoverPreview)&&<div className="cover-preview"><img src={coverPreview||storedCoverPreview} alt="Vista previa da portada"/>{coverFile&&<button type="button" className="small-add" onClick={()=>setCoverFile(null)} aria-label="Quitar portada"><X size={16}/></button>}</div>}{error&&<div className="error-note">{error}</div>}<button className="create-button" type="submit">{initial?'Gardar cambios':'Anotar este plan'} <Check size={17}/></button></form></section></div>
+  return <div className="overlay" onClick={onClose}><section className="add-sheet event-editor" onClick={e=>e.stopPropagation()}><div className="sheet-handle"/><div className="add-head"><div><span className="section-label">{initial?'EDITAR EVENTO':'UN PLAN NOVO'}</span><h2>{initial?'Axusta os detalles':'Que tes na axenda?'}</h2></div><button className="close-button" onClick={onClose} aria-label="Pechar"><X size={19}/></button></div><form onSubmit={e=>void submit(e)}><label>Título *<input autoFocus value={draft.title} onChange={e=>set('title',e.target.value)} placeholder="p.ex. Concerto de verán" required/></label><div className="form-two"><label>Categoría<select value={draft.categoryId} onChange={e=>set('categoryId',e.target.value)}>{categories.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><label>Data de inicio *<input value={draft.startDate} onChange={e=>changeStartDate(e.target.value)} type="date" required/></label></div><div className="form-two"><label>Hora de inicio<input value={draft.startTime} onChange={e=>set('startTime',e.target.value)} type="time"/></label><label>Data de fin<input value={draft.endDate||''} onChange={e=>changeEndDate(e.target.value)} type="date"/><small className="field-hint">Igual ao inicio ata que a cambies</small></label></div><div className="form-two"><label>Hora de fin<input value={draft.endTime} onChange={e=>set('endTime',e.target.value)} type="time"/></label><label>Prezo<input value={draft.price} onChange={e=>set('price',e.target.value)} placeholder="p.ex. 25 €"/></label></div><label>Recinto ou lugar<input value={draft.venue} onChange={e=>set('venue',e.target.value)} placeholder="Nome do local"/></label><label>Enderezo<input value={draft.address} onChange={e=>set('address',e.target.value)} placeholder="Rúa, número…"/></label><label>Localidade<input value={draft.city} onChange={e=>set('city',e.target.value)} placeholder="Cidade"/></label><MapSearchActions query={locationQuery}/><label>Descrición<textarea value={draft.description} onChange={e=>set('description',e.target.value)} rows={3} placeholder="Que che gustaría lembrar deste plan?"/></label><div className="form-two"><label>Acompañantes<input value={draft.companions} onChange={e=>set('companions',e.target.value)} placeholder="Con quen vas?"/></label><label>Ligazón externa<input value={draft.link} onChange={e=>set('link',e.target.value)} type="url" placeholder="https://…"/></label></div><label>Notas persoais<textarea value={draft.notes} onChange={e=>set('notes',e.target.value)} rows={2}/></label><label>Portada<input type="file" accept="image/*" onChange={e=>setCoverFile(e.target.files?.[0]||null)}/></label>{(coverPreview||storedCoverPreview)&&<div className="cover-preview"><img src={coverPreview||storedCoverPreview} alt="Vista previa da portada"/>{coverFile&&<button type="button" className="small-add" onClick={()=>setCoverFile(null)} aria-label="Quitar portada"><X size={16}/></button>}</div>}{error&&<div className="error-note">{error}</div>}<button className="create-button" type="submit">{initial?'Gardar cambios':'Anotar este plan'} <Check size={17}/></button></form></section></div>
+}
+
+function MapSearchActions({query}:{query:string}) {
+  const location=query.trim()
+  if(!location)return null
+  return <div className="map-search-block"><span>Buscar este lugar en:</span><div><a href={appleMapsURL(location)} target="_blank" rel="noreferrer"><MapPin size={14}/> Apple Maps <ExternalLink size={11}/></a><a href={googleMapsURL(location)} target="_blank" rel="noreferrer"><MapPin size={14}/> Google Maps <ExternalLink size={11}/></a></div><small>A busca ábrese no mapa; ao gardar, a ficha creará estes enlaces cos datos de localización.</small></div>
 }
 
 function Agenda({items,open}:{items:EventItem[];open:(e:EventItem)=>void}) {
